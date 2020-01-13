@@ -8,15 +8,17 @@ const buffer = 128
 
 type tree interface {
 	Watch(string, chan<- EventInfo, ...Event) error
+	OnEventsLost() <-chan struct{}
 	Stop(chan<- EventInfo)
 	Close() error
 }
 
 func newTree() tree {
 	c := make(chan EventInfo, buffer)
-	w := newWatcher(c)
+	lost := make(chan struct{}, 1)
+	w := newWatcher(c, lost)
 	if rw, ok := w.(recursiveWatcher); ok {
-		return newRecursiveTree(rw, c)
+		return newRecursiveTree(rw, c, lost)
 	}
-	return newNonrecursiveTree(w, c, make(chan EventInfo, buffer))
+	return newNonrecursiveTree(w, c, make(chan EventInfo, buffer), lost)
 }

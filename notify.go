@@ -64,6 +64,12 @@ func Watch(path string, c chan<- EventInfo, events ...Event) error {
 	return defaultTree.Watch(path, c, events...)
 }
 
+// OnEventsLost returns a channel which will receive notifications when events
+// have been lost.
+func OnEventsLost() <-chan struct{} {
+	return defaultTree.OnEventsLost()
+}
+
 // Stop removes all watchpoints registered for c. All underlying watches are
 // also removed, for which c was the last channel listening for events.
 //

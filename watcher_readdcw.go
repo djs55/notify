@@ -262,14 +262,17 @@ type readdcw struct {
 	start bool
 	wg    sync.WaitGroup
 	c     chan<- EventInfo
+	// signalled when events are lost
+	eventsLost chan<- struct{}
 }
 
 // NewWatcher creates new non-recursive watcher backed by ReadDirectoryChangesW.
-func newWatcher(c chan<- EventInfo) watcher {
+func newWatcher(c chan<- EventInfo, eventsLost chan<- struct{}) watcher {
 	r := &readdcw{
-		m:   make(map[string]*watched),
-		cph: syscall.InvalidHandle,
-		c:   c,
+		m:          make(map[string]*watched),
+		cph:        syscall.InvalidHandle,
+		c:          c,
+		eventsLost: eventsLost,
 	}
 	runtime.SetFinalizer(r, func(r *readdcw) {
 		if r.cph != syscall.InvalidHandle {

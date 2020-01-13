@@ -104,20 +104,27 @@ type recursiveTree struct {
 		recursiveWatcher
 	}
 	c chan EventInfo
+	// signal when events are lost
+	eventsLost chan struct{}
 }
 
 // newRecursiveTree TODO(rjeczalik)
-func newRecursiveTree(w recursiveWatcher, c chan EventInfo) *recursiveTree {
+func newRecursiveTree(w recursiveWatcher, c chan EventInfo, eventsLost chan struct{}) *recursiveTree {
 	t := &recursiveTree{
 		root: root{nd: newnode("")},
 		w: struct {
 			watcher
 			recursiveWatcher
 		}{w.(watcher), w},
-		c: c,
+		c:          c,
+		eventsLost: eventsLost,
 	}
 	go t.dispatch()
 	return t
+}
+
+func (t *recursiveTree) OnEventsLost() <-chan struct{} {
+	return t.eventsLost
 }
 
 // dispatch TODO(rjeczalik)

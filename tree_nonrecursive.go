@@ -13,22 +13,29 @@ type nonrecursiveTree struct {
 	w    watcher
 	c    chan EventInfo
 	rec  chan EventInfo
+	// signal when events are lost
+	eventsLost chan struct{}
 }
 
 // newNonrecursiveTree TODO(rjeczalik)
-func newNonrecursiveTree(w watcher, c, rec chan EventInfo) *nonrecursiveTree {
+func newNonrecursiveTree(w watcher, c, rec chan EventInfo, eventsLost chan struct{}) *nonrecursiveTree {
 	if rec == nil {
 		rec = make(chan EventInfo, buffer)
 	}
 	t := &nonrecursiveTree{
-		root: root{nd: newnode("")},
-		w:    w,
-		c:    c,
-		rec:  rec,
+		root:       root{nd: newnode("")},
+		w:          w,
+		c:          c,
+		rec:        rec,
+		eventsLost: eventsLost,
 	}
 	go t.dispatch(c)
 	go t.internal(rec)
 	return t
+}
+
+func (t *nonrecursiveTree) OnEventsLost() <-chan struct{} {
+	return t.eventsLost
 }
 
 // dispatch TODO(rjeczalik)

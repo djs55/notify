@@ -177,12 +177,15 @@ func (w *watch) Stop() {
 type fsevents struct {
 	watches map[string]*watch
 	c       chan<- EventInfo
+	// signalled when events are lost
+	eventsLost chan<- struct{}
 }
 
-func newWatcher(c chan<- EventInfo) watcher {
+func newWatcher(c chan<- EventInfo, eventsLost chan<- struct{}) watcher {
 	return &fsevents{
-		watches: make(map[string]*watch),
-		c:       c,
+		watches:    make(map[string]*watch),
+		c:          c,
+		eventsLost: eventsLost,
 	}
 }
 

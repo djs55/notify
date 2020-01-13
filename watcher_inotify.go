@@ -48,10 +48,12 @@ type inotify struct {
 	buffer       [eventBufferSize]byte // inotify event buffer
 	wg           sync.WaitGroup        // wait group used to close main loop
 	c            chan<- EventInfo      // event dispatcher channel
+		// signalled when events are lost
+		eventsLost chan<- struct{}
 }
 
 // NewWatcher creates new non-recursive inotify backed by inotify.
-func newWatcher(c chan<- EventInfo) watcher {
+func newWatcher(c chan<- EventInfo, eventsLost chan<- struct{}) watcher {
 	i := &inotify{
 		m:      make(map[int32]*watched),
 		fd:     invalidDescriptor,
@@ -59,6 +61,7 @@ func newWatcher(c chan<- EventInfo) watcher {
 		epfd:   invalidDescriptor,
 		epes:   make([]unix.EpollEvent, 0),
 		c:      c,
+		eventsLost: eventsLost,
 	}
 	runtime.SetFinalizer(i, func(i *inotify) {
 		i.epollclose()
