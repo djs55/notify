@@ -8,6 +8,7 @@ package notify
 
 import (
 	"errors"
+	"log"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -356,13 +357,24 @@ func (r *readdcw) loop() {
 			r.wg.Done()
 			return
 		}
+
 		if overlapped == nil {
 			// TODO: check key == rewatch delete or 0(panic)
 			continue
 		}
+		if err != nil {
+			// ERROR_NOTIFY_ENUM_DIR means the buffer overflowed
+			// Any other error is probably also bad.
+			log.Println("GetQueuedCompletionStatus failed with ", err)
+			r.sendEventsLost()
+		}
 		overEx := (*overlappedEx)(unsafe.Pointer(overlapped))
 		if n != 0 {
 			r.loopevent(n, overEx)
+		} else {
+			// mutagen considers this a queue overflow
+			log.Println("GetQueuedCompletionStatus returned 0 bytes")
+			r.sendEventsLost()
 		}
 		if err = overEx.parent.readDirChanges(); err != nil {
 			// TODO: error handling
@@ -447,6 +459,16 @@ func (r *readdcw) send(es []*event) {
 			}
 		}
 		r.c <- e
+	}
+}
+
+func (r *readdcw) sendEventsLost() {
+	select {
+	case r.eventsLost <- struct{}{}:
+	default:
+		// Since the channel is buffered there must already be an events lost
+		// signal in there. It's not necessary to send more than one.
+		log.Println("coalescing events lost message")
 	}
 }
 
