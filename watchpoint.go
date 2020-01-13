@@ -85,11 +85,7 @@ func (wp watchpoint) Dispatch(ei EventInfo, extra Event) {
 	}
 	for ch, eset := range wp {
 		if ch != nil && matches(eset, e) {
-			select {
-			case ch <- ei:
-			default: // Drop event if receiver is too slow
-				dbgprintf("dropped %s on %q: receiver too slow", ei.Event(), ei.Path())
-			}
+			ch <- ei // synchronous
 		}
 	}
 }
