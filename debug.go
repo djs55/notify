@@ -11,6 +11,9 @@ import (
 	"strings"
 )
 
+// temporarily enable debugging
+var debugTag = true
+
 var dbgprint func(...interface{})
 
 var dbgprintf func(string, ...interface{})
